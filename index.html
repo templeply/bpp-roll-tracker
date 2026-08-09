@@ -1031,14 +1031,15 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('This clears all rows, columns, roll numbering, and sales on this phone (Business Details are kept). Continue?')) return;
-  JSON.parse(JSON.stringify(DEFAULT_STATE));
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
   persistCounters({});
   opDraft = {}; saveDraft();
   selectedRolls = new Set(); persistSelected();
   persist(); renderAll();
-  setStatus('Cleared. Import a master sheet to start.', 'ok');
+  setStatus('Cleared. Default fields restored.', 'ok');
 });
 
+  
 function setStatus(msg, kind){
   const el=document.getElementById('status'); el.textContent=msg; el.className=kind||'';
   setTimeout(()=>{ el.textContent=''; }, 3000);
