@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>BPP Roll Tracker</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- App-like behavior when added to home screen (iOS + Android) -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -121,6 +122,7 @@
 <body>
 
 <h1>BPP Roll Tracker</h1>
+<div id="authStatus" style="font-size:0.78rem; color:var(--muted); margin-bottom:8px;">Not signed in</div>
 
 <div class="toolbar">
   <button id="syncBtn">Sync Now</button>
@@ -241,7 +243,7 @@ const DEFAULT_BUSINESS = {
   gstin:'GSTIN:',
   email:'abc@gmail.com',
   deviceTag:'P1',
-  sheetsSyncUrl:''
+  spreadsheetId:''
 };
 
 let state = loadState();
@@ -279,7 +281,7 @@ const BUSINESS_FIELDS = [
   { key:'gstin',   label:'GSTIN' },
   { key:'email',   label:'Email' },
   { key:'deviceTag', label:'Device Tag (short code for this phone, e.g. P1) — keeps Roll Nos. unique across phones' },
-  { key:'sheetsSyncUrl', label:'Google Sheet Sync URL (from the deployed Apps Script)' }
+  { key:'spreadsheetId', label:'Google Sheet ID (from the Sheet\'s URL, between /d/ and /edit)' }
 ];
 
 function renderSettings(){
@@ -796,84 +798,168 @@ function renderSalesHistory(contentEl){
   contentEl.appendChild(wrap);
 }
 
-/* ============ Multi-phone sync ============ */
+/* ============ Google Sign-In + direct Sheets API sync ============ */
+// Paste your Web application Client ID from Google Cloud Console below (ends in .apps.googleusercontent.com)
+const GOOGLE_CLIENT_ID = '690314824350-r5bkhb9f3dkp09g6h4ealngq64nvvovp.apps.googleusercontent.com.apps.googleusercontent.com';
+
 let syncInProgress = false;
+let tokenClient = null;
+let accessToken = null;
+let signedInEmail = null;
+
+function initGoogleAuth(){
+  if(typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return; // GIS not loaded yet (offline on first load)
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/spreadsheets email profile',
+    callback: async (resp)=>{
+      if(resp.error){ setStatus('Sign-in failed: '+resp.error, 'err'); return; }
+      accessToken = resp.access_token;
+      await fetchUserInfo();
+      updateAuthStatus();
+      syncNow(true);
+    }
+  });
+}
+
+async function fetchUserInfo(){
+  try{
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{ Authorization:`Bearer ${accessToken}` } });
+    const info = await res.json();
+    signedInEmail = info.email || null;
+  }catch(e){ signedInEmail = null; }
+  updateAuthStatus();
+}
+
+function updateAuthStatus(){
+  const el = document.getElementById('authStatus');
+  if(!el) return;
+  el.textContent = signedInEmail ? ('Signed in as '+signedInEmail) : 'Not signed in';
+}
+
+async function sheetsGet(ssId, range){
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${ssId}/values/${encodeURIComponent(range)}`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if(res.status===401){ accessToken=null; throw new Error('auth_expired'); }
+  if(!res.ok){ throw new Error('sheets_error_'+res.status); }
+  const data = await res.json();
+  return data.values || [];
+}
+
+async function sheetsAppend(ssId, range, row){
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${ssId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`, {
+    method:'POST',
+    headers: { Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ values:[row] })
+  });
+  if(res.status===401){ accessToken=null; throw new Error('auth_expired'); }
+}
 
 async function syncNow(quiet){
-  const url = (business.sheetsSyncUrl||'').trim();
-  if(!url){ if(!quiet) setStatus('Add a Google Sheet Sync URL in Settings first.', 'err'); return; }
+  const ssId = (business.spreadsheetId||'').trim();
+  if(!ssId){ if(!quiet) setStatus('Add your Google Sheet ID in Business Details first.', 'err'); return; }
+  if(!accessToken){
+    if(!tokenClient){ if(!quiet) setStatus('Google sign-in still loading — try again in a moment.', 'err'); return; }
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+    return; // the token callback re-calls syncNow(true) once signed in
+  }
   if(syncInProgress) return;
   syncInProgress = true;
   if(!quiet) setStatus('Syncing…', '');
 
   try{
     const rollCol = findCol(state.prod.columns,'roll');
+    const prodCol = findCol(state.prod.columns,'product'), sizeCol = findCol(state.prod.columns,'size'),
+          grossCol = findCol(state.prod.columns,'gross'), coreCol = findCol(state.prod.columns,'core'),
+          netCol = findCol(state.prod.columns,'net'), tsCol = findCol(state.prod.columns,'timestamp');
 
-    // Push anything created on this phone that hasn't gone up yet
+    // Push local unsynced production rows (skip if already present remotely)
+    let remoteProd = await sheetsGet(ssId, 'Production!A2:G');
+    const knownRemoteRolls = new Set(remoteProd.map(r=>r[0]));
     const unsyncedRows = state.prod.rows.filter(r=>!r._synced);
     for(const r of unsyncedRows){
-      await fetch(url, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ type:'production', row:r })
-      });
+      const rn = rollCol ? r[rollCol.key] : '';
+      if(rn && !knownRemoteRolls.has(rn)){
+        await sheetsAppend(ssId, 'Production!A:G', [
+          rn, prodCol?r[prodCol.key]:'', sizeCol?r[sizeCol.key]:'', grossCol?r[grossCol.key]:'',
+          coreCol?r[coreCol.key]:'', netCol?r[netCol.key]:'', tsCol?r[tsCol.key]:''
+        ]);
+        knownRemoteRolls.add(rn);
+      }
       r._synced = true;
     }
+
+    // Push local unsynced sales
+    let remoteSales = await sheetsGet(ssId, 'Sales!A2:G');
+    const knownRemoteSaleIds = new Set(remoteSales.map(r=>r[0]));
     const unsyncedSales = state.sales.filter(s=>!s._synced);
     for(const s of unsyncedSales){
       if(!s.id) s.id = (business.deviceTag||'X')+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);
-      await fetch(url, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ type:'sale', tx:s })
-      });
+      if(!knownRemoteSaleIds.has(s.id)){
+        await sheetsAppend(ssId, 'Sales!A:G', [
+          s.id, s.customer, s.dispatchDate, s.destination, (s.rollNos||[]).join(', '), s.totalNet, s.timestamp
+        ]);
+        knownRemoteSaleIds.add(s.id);
+      }
       s._synced = true;
     }
     persist();
 
-    // Pull the shared sheet and merge in anything from other phones we don't have yet
-    const res = await fetch(url, { method:'GET' });
-    const data = await res.json();
-    if(data.status==='ok'){
-      let added = 0;
-      if(rollCol && Array.isArray(data.production)){
-        const known = new Set(state.prod.rows.map(r=>r[rollCol.key]));
-        data.production.forEach(remoteRow=>{
-          const rn = remoteRow['Roll No.'];
-          if(rn && !known.has(rn)){
-            const row = {};
-            state.prod.columns.forEach(c=>{ row[c.key] = remoteRow[c.key] ?? ''; });
-            row[rollCol.key] = rn;
-            row._synced = true;
-            state.prod.rows.push(row);
-            known.add(rn);
-            added++;
-          }
-        });
-      }
-      if(Array.isArray(data.sales)){
-        const knownIds = new Set(state.sales.map(s=>s.id));
-        data.sales.forEach(remoteTx=>{
-          if(remoteTx.id && !knownIds.has(remoteTx.id)){
-            state.sales.push({ ...remoteTx, _synced:true });
-            knownIds.add(remoteTx.id);
-            added++;
-          }
-        });
-      }
-      if(data.options && typeof data.options === 'object'){
-        state.prod.columns.forEach(c=>{
-          if(c.type==='select' && data.options[c.key]) c.options = data.options[c.key];
-        });
-      }
-      persist(); renderAll();
-      if(!quiet) setStatus(`Synced ✓ (${added} new item${added===1?'':'s'} from other phones)`, 'ok');
-    } else if(!quiet){
-      setStatus('Sync error: '+(data.message||'unknown'), 'err');
+    // Re-read fresh to pull in anything other phones added
+    const freshProd = await sheetsGet(ssId, 'Production!A2:G');
+    const freshSales = await sheetsGet(ssId, 'Sales!A2:G');
+    const freshOptions = await sheetsGet(ssId, 'Options!A2:B');
+
+    let added = 0;
+    if(rollCol){
+      const known = new Set(state.prod.rows.map(r=>r[rollCol.key]));
+      freshProd.forEach(r=>{
+        const rn = r[0];
+        if(rn && !known.has(rn)){
+          const row = {}; state.prod.columns.forEach(c=>row[c.key]='');
+          row[rollCol.key]=rn;
+          if(prodCol) row[prodCol.key]=r[1]||'';
+          if(sizeCol) row[sizeCol.key]=r[2]||'';
+          if(grossCol) row[grossCol.key]=r[3]||'';
+          if(coreCol) row[coreCol.key]=r[4]||'';
+          if(netCol) row[netCol.key]=r[5]||'';
+          if(tsCol) row[tsCol.key]=r[6]||'';
+          row._synced=true;
+          state.prod.rows.push(row); known.add(rn); added++;
+        }
+      });
     }
+    const knownIds = new Set(state.sales.map(s=>s.id));
+    freshSales.forEach(r=>{
+      const id = r[0];
+      if(id && !knownIds.has(id)){
+        state.sales.push({
+          id, customer:r[1]||'', dispatchDate:r[2]||'', destination:r[3]||'',
+          rollNos:String(r[4]||'').split(',').map(s=>s.trim()).filter(Boolean),
+          totalNet:r[5]||'', timestamp:r[6]||'', _synced:true
+        });
+        knownIds.add(id); added++;
+      }
+    });
+    if(freshOptions.length){
+      const optMap={};
+      freshOptions.forEach(r=>{ if(r[0]) optMap[String(r[0]).trim()] = String(r[1]||'').split(',').map(s=>s.trim()).filter(Boolean); });
+      state.prod.columns.forEach(c=>{ if(c.type==='select' && optMap[c.key]) c.options = optMap[c.key]; });
+    }
+
+    persist(); renderAll();
+    if(!quiet) setStatus(`Synced ✓ (${added} new item${added===1?'':'s'})`, 'ok');
   }catch(err){
-    if(!quiet) setStatus('Could not reach the Google Sheet. Check connection/URL.', 'err');
+    if(err.message==='auth_expired'){
+      if(!quiet) setStatus('Session expired — tap Sync to sign in again.', 'err');
+    } else if(!quiet){
+      setStatus('Could not reach the Google Sheet. Check connection / Sheet ID / sharing permissions.', 'err');
+    }
   }
   syncInProgress = false;
 }
+
 
 function renderAll(){
   renderOperatorForm();
@@ -963,7 +1049,16 @@ document.getElementById('syncBtn').addEventListener('click', ()=>syncNow(false))
 
 renderAll();
 renderSettings();
-syncNow(true); // auto-sync on open, silently — no error shown if offline or not yet configured
+
+// The Google sign-in library loads asynchronously — poll briefly until it's ready, then init once.
+const _gsiWait = setInterval(()=>{
+  if(typeof google !== 'undefined' && google.accounts && google.accounts.oauth2){
+    clearInterval(_gsiWait);
+    initGoogleAuth();
+    syncNow(true); // auto-sync on open, silently — no error shown if offline or not signed in yet
+  }
+}, 250);
+setTimeout(()=>clearInterval(_gsiWait), 15000); // give up quietly after 15s if it never loads (e.g. offline)
 </script>
 </body>
 </html>
