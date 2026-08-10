@@ -810,7 +810,27 @@ const GOOGLE_CLIENT_ID = '690314824350-r5bkhb9f3dkp09g6h4ealngq64nvvovp.apps.goo
 let syncInProgress = false;
 let tokenClient = null;
 let accessToken = null;
+let authTokenExpiresAt = null;
 let signedInEmail = null;
+
+function persistAuthToken(){
+  if(accessToken && authTokenExpiresAt){
+    localStorage.setItem('bpp_authtoken_v1', JSON.stringify({ token:accessToken, expiresAt:authTokenExpiresAt, email:signedInEmail }));
+  } else {
+    localStorage.removeItem('bpp_authtoken_v1');
+  }
+}
+function loadAuthToken(){
+  try{
+    const raw = localStorage.getItem('bpp_authtoken_v1');
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(obj && obj.token && obj.expiresAt && obj.expiresAt > Date.now()+60000){
+      return obj;
+    }
+  }catch(e){}
+  return null;
+}
 
 function initGoogleAuth(){
   if(typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return; // GIS not loaded yet (offline on first load)
@@ -820,7 +840,9 @@ function initGoogleAuth(){
     callback: async (resp)=>{
       if(resp.error){ setStatus('Sign-in failed: '+resp.error, 'err'); return; }
       accessToken = resp.access_token;
+      authTokenExpiresAt = Date.now() + (parseInt(resp.expires_in,10)||3600)*1000;
       await fetchUserInfo();
+      persistAuthToken();
       updateAuthStatus();
       syncNow(true);
     }
@@ -957,9 +979,9 @@ async function syncNow(quiet){
     if(!quiet) setStatus(`Synced ✓ (${added} new item${added===1?'':'s'})`, 'ok');
   }catch(err){
     if(err.message==='auth_expired'){
+      authTokenExpiresAt = null;
+      localStorage.removeItem('bpp_authtoken_v1');
       if(!quiet) setStatus('Session expired — tap Sync to sign in again.', 'err');
-    } else if(!quiet){
-      setStatus('Could not reach the Google Sheet. Check connection / Sheet ID / sharing permissions.', 'err');
     }
   }
   syncInProgress = false;
@@ -1056,7 +1078,18 @@ document.getElementById('syncBtn').addEventListener('click', ()=>syncNow(false))
 renderAll();
 renderSettings();
 
-// The Google sign-in library loads asynchronously — poll briefly until it's ready, then init once.
+(function restoreAuthOnLoad(){
+  const saved = loadAuthToken();
+  if(saved){
+    accessToken = saved.token;
+    authTokenExpiresAt = saved.expiresAt;
+    signedInEmail = saved.email || null;
+    updateAuthStatus();
+  }
+})();
+
+// The Google sign-in library loads asynchronously
+
 const _gsiWait = setInterval(()=>{
   if(typeof google !== 'undefined' && google.accounts && google.accounts.oauth2){
     clearInterval(_gsiWait);
