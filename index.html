@@ -553,7 +553,7 @@ function makeBarcodeVertical(svgEl){
   if(bcCol){ bcCol.style.width = finalWCm+'cm'; bcCol.style.height = finalHCm+'cm'; }
 }
 
-function onPrintOperator(){
+async function onPrintOperator(){
   const cols = state.prod.columns;
   const rollCol=findCol(cols,'roll'), prodCol=findCol(cols,'product'), sizeCol=findCol(cols,'size'),
         grossCol=findCol(cols,'gross'), coreCol=findCol(cols,'core'), netCol=findCol(cols,'net'), tsCol=findCol(cols,'timestamp');
@@ -566,7 +566,12 @@ function onPrintOperator(){
   if(!size || !product){ setStatus('Select Product and Size first.', 'err'); return; }
   if(!gross){ setStatus('Enter Gross Wt. first.', 'err'); return; }
 
-  const rollNo = nextRollNo(product,size); // generated + locked in here, never reused
+  const printBtn = document.getElementById('printOpBtn');
+  if(printBtn){ printBtn.disabled = true; printBtn.textContent = 'Syncing…'; }
+  await syncNow(true); // pull latest numbers from all devices before assigning this roll's number
+  if(printBtn){ printBtn.disabled = false; printBtn.textContent = 'Print Label'; }
+
+  const rollNo = nextRollNo(product,size);
   const net = (parseFloat(gross)-parseFloat(core)).toFixed(2);
 
   const row = {};
@@ -580,11 +585,12 @@ function onPrintOperator(){
 
   fillAndPrintSlip(product,size,rollNo,gross,core,net);
 
-  if(grossCol) opDraft[grossCol.key] = ''; // clear for the next roll — Product/Size stay put
+  if(grossCol) opDraft[grossCol.key] = '';
   saveDraft();
   renderAll();
   syncNow(true);
 }
+
 
 function renderReprintPanel(contentEl){
   const cols = state.prod.columns;
