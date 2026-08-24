@@ -428,21 +428,35 @@ input[type=checkbox]:focus-visible{outline:2.5px solid var(--accent); outline-of
 #slip{display:none;}
 @media print{
   body>*{display:none!important;}
-  #slip{display:block!important;position:fixed;top:0;left:0;width:4in;height:3in;}
+  /* The page stays 4x3 landscape, but the slip is authored PORTRAIT
+     (2.92 wide x 3.94 tall) and turned a quarter turn to sit on it.
+     Rotating here rather than leaving it to the printer driver is what
+     makes the text run down the label instead of across it.
+     The block is kept a shade under the page: one that measures exactly
+     4x3in tips onto a second page on printers with an unprintable
+     margin, which feeds a blank label after every print. */
+  #slip{display:block!important;position:fixed;top:0;left:0;
+        width:3.94in;height:2.92in;overflow:hidden;page-break-after:avoid;}
+  html,body{width:3.94in;height:2.92in;overflow:hidden;}
   @page{size:4in 3in;margin:0;}
 }
 .slip-outer{
   display:flex;align-items:stretch;font-family:Arial,Helvetica,sans-serif;color:#000;
-  width:3.88in;height:2.88in;overflow:hidden;
+  /* portrait, then turned: 2.88 wide x 3.88 tall becomes 3.88 x 2.88 on the page */
+  width:2.88in;height:3.88in;overflow:hidden;
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) rotate(-90deg);
+  transform-origin:center center;
 }
 .slip-box{
-  width:3.32in;height:2.88in;border:1pt solid #000;border-right:none;
+  width:2.32in;height:3.88in;border:1pt solid #000;border-right:none;
   display:flex;flex-direction:column;overflow:hidden;
 }
-.sl-row{border-bottom:0.5pt solid #000;padding:0.6mm 1.4mm;line-height:1.1;}
+.sl-row{border-bottom:0.5pt solid #000;padding:0.6mm 1.4mm;line-height:1.1;
+  flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;}
 .sl-title{font-size:9.5pt;font-weight:800;letter-spacing:-.15pt;}
 .sl-head{text-align:center;font-weight:700;font-size:6pt;letter-spacing:.8pt;}
-.sl-grid{display:flex;}
+.sl-grid{display:flex;flex:1 1 auto;}
 .sl-cell{
   flex:1;padding:0.5mm 1.4mm;border-right:0.5pt solid #000;
   border-bottom:0.5pt solid #000;min-width:0;
@@ -453,10 +467,12 @@ input[type=checkbox]:focus-visible{outline:2.5px solid var(--accent); outline-of
 .sl-mrp{display:flex;align-items:center;}
 .sl-mrp .sl-label{flex:0 0 17mm;}
 .sl-mrp .sl-val{flex:1;text-align:center;font-size:7.6pt;}
-.sl-plain{padding:0.45mm 1.4mm;border-bottom:0.5pt solid #000;font-size:5.4pt;line-height:1.08;}
-.sl-email{margin:0.6mm 1.4mm;border:0.75pt solid #000;padding:0.6mm;font-size:5.4pt;}
+.sl-plain{padding:0.45mm 1.4mm;border-bottom:0.5pt solid #000;font-size:5.4pt;line-height:1.08;
+  flex:1 1 auto;display:flex;align-items:center;}
+.sl-email{margin:0.6mm 1.4mm;border:0.75pt solid #000;padding:0.6mm;font-size:5.4pt;
+  flex:1 1 auto;display:flex;align-items:center;}
 .barcode-col{
-  width:0.56in;min-width:0.56in;height:2.88in;border:1pt solid #000;
+  width:0.56in;min-width:0.56in;height:3.88in;border:1pt solid #000;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .bc-fallback{
@@ -996,7 +1012,7 @@ function makeBarcodeVertical(svgEl){
   // down it — so each is capped against the opposite dimension.
   // Column is 0.56in x 2.88in (54 x 276px at 96dpi). Leave a little
   // margin so the bars never touch the rule.
-  const maxAcross=42, maxAlong=262;
+  const maxAcross=42, maxAlong=355;
   const scale=Math.min(maxAcross/hn, maxAlong/wn, 1);
 
   svgEl.setAttribute('viewBox',`0 0 ${wn} ${hn}`);
