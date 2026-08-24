@@ -241,6 +241,49 @@ h1{
   text-transform:uppercase; color:var(--muted); margin-bottom:11px;
 }
 
+/* ── scan box ──────────────────────────────────────────────── */
+.scanbox{
+  padding:16px 17px 15px; margin-bottom:18px;
+  border-radius:var(--r-lg); box-shadow:var(--press);
+}
+.scan-input{
+  width:100%; border:none; background:transparent;
+  padding:15px 17px; border-radius:var(--r-md);
+  box-shadow:var(--raise-xs);
+  font-family:var(--num); font-size:1.15rem; font-weight:700;
+  letter-spacing:.02em; color:var(--ink); outline:none;
+}
+.scan-input::placeholder{color:var(--muted); font-weight:600; letter-spacing:0;}
+.scan-input:focus{box-shadow:var(--raise-xs), 0 0 0 2.5px var(--accent);}
+.scan-hint{
+  font-size:.72rem; color:var(--muted); margin-top:8px; line-height:1.35;
+}
+.scan-log{
+  margin-top:13px; display:flex; flex-direction:column; gap:5px;
+  max-height:190px; overflow-y:auto;
+}
+.scan-line{
+  font-size:.78rem; font-weight:600; padding:8px 11px;
+  border-radius:var(--r-sm); background:var(--bg);
+  box-shadow:var(--raise-xs); color:var(--ink-2);
+  word-break:break-word;
+}
+.scan-line.ok{color:var(--ok);}
+.scan-line.dupe{color:var(--muted);}
+.scan-line.info{color:var(--ink-2); font-style:italic;}
+.scan-line.warn{
+  color:var(--warn); font-weight:800;
+  box-shadow:var(--raise-xs), inset 3px 0 0 var(--warn);
+}
+.scan-line.reject{
+  color:var(--err); font-weight:800;
+  box-shadow:var(--raise-xs), inset 3px 0 0 var(--err);
+}
+@keyframes flashrow{
+  0%{background:#BFE3C8;} 100%{background:var(--bg);}
+}
+tbody tr.flash td{animation:flashrow .9s ease-out both;}
+
 /* ── sales ─────────────────────────────────────────────────── */
 .sales-title{
   font-size:.66rem; font-weight:800; letter-spacing:.13em;
@@ -271,7 +314,7 @@ input[type=checkbox]{
 input[type=checkbox]:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px;}
 
 .sale-summary{
-  margin:15px 0; padding:15px 17px;
+  margin:0 0 18px; padding:15px 17px;
   border-radius:var(--r-md); box-shadow:var(--press);
   font-size:.88rem; color:var(--ink-2);
 }
@@ -359,8 +402,7 @@ input[type=checkbox]:focus-visible{outline:2.5px solid var(--accent); outline-of
   /* sales: list left, form right */
   .sales-layout{display:grid; grid-template-columns:minmax(0,1fr) 350px; gap:26px; align-items:start;}
   .sales-side{position:sticky; top:24px;}
-  .sale-summary,.sale-form{margin-top:0;}
-  .sale-form{margin-top:14px;}
+  .sale-form{margin-top:0;}
   table{min-width:0;}
   .tbl-wrap{max-height:62vh; overflow-y:auto;}
 
@@ -379,42 +421,42 @@ input[type=checkbox]:focus-visible{outline:2.5px solid var(--accent); outline-of
   *{animation:none!important; transition:none!important;}
 }
 
-/* ═══ PRINT  —  6 x 4 inch thermal label, 1:1, no scaling ══════
-   The design is 6in wide x 4in tall. The printer driver turns it to
-   run down the 4in-wide roll, exactly as the old Sheets print did.
+/* ═══ PRINT  —  4 x 3 inch thermal label, landscape, 1:1 ══════
+   Page is the label. The design is inset a little inside it so
+   driver rounding can never push the tail onto the next label.
    ═══════════════════════════════════════════════════════════ */
 #slip{display:none;}
 @media print{
   body>*{display:none!important;}
-  #slip{display:block!important;position:fixed;top:0;left:0;width:6in;height:4in;}
-  @page{size:6in 4in;margin:0;}
+  #slip{display:block!important;position:fixed;top:0;left:0;width:4in;height:3in;}
+  @page{size:4in 3in;margin:0;}
 }
 .slip-outer{
   display:flex;align-items:stretch;font-family:Arial,Helvetica,sans-serif;color:#000;
-  width:5.8in;height:3.85in;overflow:hidden;
+  width:3.88in;height:2.88in;overflow:hidden;
 }
 .slip-box{
-  width:5in;height:3.85in;border:1.5pt solid #000;border-right:none;
+  width:3.32in;height:2.88in;border:1pt solid #000;border-right:none;
   display:flex;flex-direction:column;overflow:hidden;
 }
-.sl-row{border-bottom:0.75pt solid #000;padding:1.0mm 2.2mm;line-height:1.12;}
-.sl-title{font-size:14pt;font-weight:800;letter-spacing:-.2pt;}
-.sl-head{text-align:center;font-weight:700;font-size:8.5pt;letter-spacing:1.1pt;}
+.sl-row{border-bottom:0.5pt solid #000;padding:0.6mm 1.4mm;line-height:1.1;}
+.sl-title{font-size:9.5pt;font-weight:800;letter-spacing:-.15pt;}
+.sl-head{text-align:center;font-weight:700;font-size:6pt;letter-spacing:.8pt;}
 .sl-grid{display:flex;}
 .sl-cell{
-  flex:1;padding:0.9mm 2.2mm;border-right:0.75pt solid #000;
-  border-bottom:0.75pt solid #000;min-width:0;
+  flex:1;padding:0.5mm 1.4mm;border-right:0.5pt solid #000;
+  border-bottom:0.5pt solid #000;min-width:0;
 }
 .sl-cell:last-child{border-right:none;}
-.sl-label{font-size:6.5pt;color:#000;line-height:1.1;}
-.sl-val{font-size:11pt;font-weight:700;line-height:1.2;word-break:break-word;}
+.sl-label{font-size:4.6pt;color:#000;line-height:1.05;}
+.sl-val{font-size:7.6pt;font-weight:700;line-height:1.15;word-break:break-word;}
 .sl-mrp{display:flex;align-items:center;}
-.sl-mrp .sl-label{flex:0 0 26mm;}
-.sl-mrp .sl-val{flex:1;text-align:center;font-size:11pt;}
-.sl-plain{padding:0.85mm 2.2mm;border-bottom:0.75pt solid #000;font-size:8pt;line-height:1.12;}
-.sl-email{margin:1.0mm 2.2mm;border:1pt solid #000;padding:1.0mm;font-size:8pt;}
+.sl-mrp .sl-label{flex:0 0 17mm;}
+.sl-mrp .sl-val{flex:1;text-align:center;font-size:7.6pt;}
+.sl-plain{padding:0.45mm 1.4mm;border-bottom:0.5pt solid #000;font-size:5.4pt;line-height:1.08;}
+.sl-email{margin:0.6mm 1.4mm;border:0.75pt solid #000;padding:0.6mm;font-size:5.4pt;}
 .barcode-col{
-  width:0.8in;min-width:0.8in;height:3.85in;border:1.5pt solid #000;
+  width:0.56in;min-width:0.56in;height:2.88in;border:1pt solid #000;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .bc-fallback{
@@ -528,6 +570,7 @@ const LS_DRAFT    = 'bpp_draft_v1';
 const LS_SEL      = 'bpp_sel_v1';
 
 const DEFAULT_STATE = {
+  reprints: [],
   prod: {
     columns: [
       { key:'Roll No.',  type:'auto'   },
@@ -577,7 +620,15 @@ let opDraft  = loadDraft();
 let selRolls = loadSel();
 let syncing  = false;
 
-function loadState(){ try{ const r=JSON.parse(localStorage.getItem(LS_STATE)); if(r&&r.prod) return r; }catch(e){} return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+function loadState(){
+  try{
+    const r=JSON.parse(localStorage.getItem(LS_STATE));
+    // A state saved by an older build has no reprints array — fill it in
+    // rather than letting every reader guard against undefined.
+    if(r&&r.prod){ if(!Array.isArray(r.reprints)) r.reprints=[]; return r; }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
 function saveState(){ localStorage.setItem(LS_STATE, JSON.stringify(state)); }
 function loadBiz(){ try{ const r=JSON.parse(localStorage.getItem(LS_BIZ)); if(r) return Object.assign({},DEFAULT_BIZ,r); }catch(e){} return JSON.parse(JSON.stringify(DEFAULT_BIZ)); }
 function saveBiz(){ localStorage.setItem(LS_BIZ, JSON.stringify(biz)); }
@@ -643,11 +694,14 @@ async function syncNow(quiet){
       if(tc) row[tc.key]=String(a[6]||'');
       return row;
     });
+    state.reprints=(data.reprints||[]).map(a=>({
+      rollNo:String(a[0]||''), deviceTag:String(a[1]||''), timestamp:String(a[2]||'')
+    }));
     state.sales=(data.sales||[]).map(a=>({
       id:String(a[0]||''), customer:String(a[1]||''), dispatchDate:String(a[2]||''),
       destination:String(a[3]||''),
       rollNos:String(a[4]||'').split(',').map(s=>s.trim()).filter(Boolean),
-      totalNet:String(a[5]||''), timestamp:String(a[6]||'')
+      totalNet:String(a[5]||''), timestamp:String(a[6]||''), deviceTag:String(a[7]||'')
     }));
     if(data.options&&data.options.length){
       const map={};
@@ -793,13 +847,39 @@ function renderReprintPanel(container){
   sel.appendChild(new Option('Select roll…',''));
   [...state.prod.rows].reverse().forEach(r=>{ sel.appendChild(new Option(r[rc.key],r[rc.key])); });
   const btn=document.createElement('button'); btn.textContent='Reprint'; btn.className='btn-sm';
-  btn.addEventListener('click',()=>{
+  btn.addEventListener('click',async ()=>{
     const rn=sel.value; if(!rn) return;
     const row=state.prod.rows.find(r=>r[rc.key]===rn); if(!row) return;
+    // Log centrally BEFORE printing. A reprint on a shop-floor phone has to
+    // be visible at the dispatch desk, so this cannot be a local-only note.
+    btn.disabled=true; btn.textContent='Logging…';
+    try{
+      await ensureDeviceTag();
+      const resp=await api('logReprint',{rollNo:rn, deviceTag:biz.deviceTag||'', timestamp:formatTS()});
+      // A refusal from the backend is NOT the same as no network. Saying
+      // "no connection" when the server answered sends people to check the
+      // wifi instead of the deployment.
+      if(!resp.ok){
+        const msg=String(resp.error||'');
+        btn.disabled=false; btn.textContent='Reprint';
+        if(/unknown action/i.test(msg)){
+          setStatus('Backend is out of date — redeploy Backend.gs to enable reprint logging. Nothing printed.','err');
+        }else{
+          setStatus('Reprint refused: '+msg+' — nothing printed.','err');
+        }
+        return;
+      }
+    }catch(e){
+      btn.disabled=false; btn.textContent='Reprint';
+      setStatus('No connection — reprint not logged, nothing printed.','err');
+      return;
+    }
+    btn.disabled=false; btn.textContent='Reprint';
     printSlip(
       pc?row[pc.key]:'', sc?row[sc.key]:'', rn,
       gc?row[gc.key]:'', cc?row[cc.key]:'', nc?row[nc.key]:''
     );
+    syncNow(true);
   });
   wrap.appendChild(sel); wrap.appendChild(btn);
   container.appendChild(wrap);
@@ -914,9 +994,9 @@ function makeBarcodeVertical(svgEl){
   // Column is 4cm x 17cm (about 151 x 643px at 96dpi). After the quarter
   // turn the barcode's height lands across the column, and its width runs
   // down it — so each is capped against the opposite dimension.
-  // Column is 1in x 4in (96 x 384px at 96dpi). Keep a hair of margin so
-  // the bars never touch the rule.
-  const maxAcross=62, maxAlong=350;
+  // Column is 0.56in x 2.88in (54 x 276px at 96dpi). Leave a little
+  // margin so the bars never touch the rule.
+  const maxAcross=42, maxAlong=262;
   const scale=Math.min(maxAcross/hn, maxAlong/wn, 1);
 
   svgEl.setAttribute('viewBox',`0 0 ${wn} ${hn}`);
@@ -926,6 +1006,118 @@ function makeBarcodeVertical(svgEl){
   svgEl.removeAttribute('transform');
   svgEl.style.transform='rotate(-90deg)';
   svgEl.style.flex='0 0 auto';
+}
+
+// ── scanning ───────────────────────────────────────────────────
+// A handheld scanner is just a keyboard: it types the code and sends
+// Enter (some send Tab). Tethered or Bluetooth makes no difference —
+// both arrive as keystrokes, so nothing here is scanner-specific.
+
+let scanLog=[];          // newest first, capped
+let scanFlash=null;      // roll number to flash green in the table
+let _audioCtx=null;
+
+// Tones are generated, not loaded — no files, works with no network.
+function beep(kind){
+  try{
+    _audioCtx=_audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const ctx=_audioCtx;
+    const tones = kind==='ok'    ? [[880,0.09]]
+                : kind==='dupe'  ? [[660,0.07],[660,0.07]]
+                : kind==='warn'  ? [[520,0.10],[420,0.14]]
+                :                  [[200,0.30]];   // reject
+    let t=ctx.currentTime;
+    tones.forEach(([f,d])=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type = kind==='ok' ? 'sine' : 'square';
+      o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.25,t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t+d+0.02);
+      t+=d+0.04;
+    });
+  }catch(e){}
+}
+
+// The barcode encodes *ROLLNO-NETWT*. Strip the wrapper and the weight
+// so a scan matches the plain roll number.
+function parseScan(raw){
+  let v=String(raw||'').trim().replace(/^\*+|\*+$/g,'').trim();
+  if(!v) return '';
+  const rows=state.prod.rows, rc=findCol(state.prod.columns,'roll');
+  if(rc){
+    // exact match first — safest
+    if(rows.some(r=>r[rc.key]===v)) return v;
+    // otherwise drop a trailing -<number> (the net weight)
+    const cut=v.replace(/-\d+(\.\d+)?$/,'');
+    if(rows.some(r=>r[rc.key]===cut)) return cut;
+    return cut;
+  }
+  return v;
+}
+
+function pushScanLog(kind,text){
+  scanLog.unshift({kind,text,at:new Date()});
+  if(scanLog.length>12) scanLog.length=12;
+}
+
+async function handleScan(raw,opts){
+  const rn=parseScan(raw);
+  if(!rn) return;
+  const rc=findCol(state.prod.columns,'roll');
+  const row=state.prod.rows.find(r=>rc&&r[rc.key]===rn);
+
+  // not in this device's copy — usually a roll printed elsewhere that
+  // this desk has not pulled yet, so sync once before calling it bad
+  if(!row){
+    if(!(opts&&opts.retried)){
+      pushScanLog('info',rn+' — not in system, syncing…');
+      renderSalesTab();
+      await syncNow(true);
+      return handleScan(raw,{retried:true});
+    }
+    beep('reject');
+    pushScanLog('reject',rn+' — NOT FOUND. Check the label.');
+    renderSalesTab(); return;
+  }
+
+  // already sold: hard block, but say who owns it — the person is
+  // holding the roll right now and that is the only useful moment
+  const tx=state.sales.find(t=>t.rollNos.includes(rn));
+  if(tx){
+    beep('reject');
+    const when=tx.dispatchDate||tx.timestamp||'';
+    pushScanLog('reject',rn+' — SOLD to '+(tx.customer||'?')+(when?' · '+when:'')+
+      (tx.destination?' · '+tx.destination:''));
+    renderSalesTab(); return;
+  }
+
+  // already in this batch: harmless. Never un-tick — handhelds
+  // double-fire constantly and a silent removal would go unnoticed.
+  if(selRolls.has(rn)){
+    beep('dupe');
+    pushScanLog('dupe',rn+' — already scanned, in this batch');
+    renderSalesTab(); return;
+  }
+
+  selRolls.add(rn); saveSel();
+  scanFlash=rn;
+  const reps=countReprints(rn);
+  if(reps>0){
+    beep('warn');
+    pushScanLog('warn',rn+' — added · LABEL REPRINTED '+reps+'× — verify weight');
+  }else{
+    beep('ok');
+    pushScanLog('ok',rn+' — added');
+  }
+  renderSalesTab();
+  setTimeout(()=>{ if(scanFlash===rn){ scanFlash=null; renderSalesTab(); } },900);
+}
+
+function countReprints(rn){
+  return (state.reprints||[]).filter(x=>x.rollNo===rn).length;
 }
 
 // ── sales tab ──────────────────────────────────────────────────
@@ -949,7 +1141,16 @@ function renderSalesTab(){
 
   let html=`<div class="sales-layout">
   <div class="sales-main">
-  <div class="sales-title">Available rolls — tick to sell</div>
+  <div class="scanbox">
+    <div class="block-title">Scan rolls to dispatch</div>
+    <input id="scanInput" class="scan-input" type="text" autocomplete="off"
+           inputmode="none" placeholder="Scan a label…">
+    <div class="scan-hint">Scanner types the code and presses Enter. Ticks below fill in as you go.</div>
+    ${scanLog.length?`<div class="scan-log">${scanLog.map(e=>
+        `<div class="scan-line ${esc(e.kind)}">${esc(e.text)}</div>`).join('')}</div>`:''}
+  </div>
+  <div id="saleSummary" class="sale-summary"></div>
+  <div class="sales-title">Available rolls — tick, or scan above</div>
   <div class="tbl-wrap"><table>
   <thead><tr><th></th><th>Roll No.</th><th>Product</th><th>Size</th><th>Net Wt</th></tr></thead><tbody>`;
 
@@ -959,7 +1160,8 @@ function renderSalesTab(){
   available.forEach(r=>{
     const rn=r[rc.key];
     const chk=selRolls.has(rn)?'checked':'';
-    html+=`<tr>
+    const flash=(scanFlash===rn)?' class="flash"':'';
+    html+=`<tr${flash}>
       <td><input type="checkbox" data-rn="${esc(rn)}" ${chk}></td>
       <td>${esc(rn)}</td>
       <td>${esc(pc?r[pc.key]:'')}</td>
@@ -970,7 +1172,6 @@ function renderSalesTab(){
   html+=`</tbody></table></div>
   </div>
   <div class="sales-side">
-  <div id="saleSummary" class="sale-summary"></div>
   <div class="sale-form">
     <input id="saleCust" type="text" placeholder="Customer name" class="sp-input" value="${esc(opDraft._saleCust||'')}">
     <input id="saleDate" type="date" class="sp-input" value="${esc(opDraft._saleDate||'')}">
@@ -998,8 +1199,36 @@ function renderSalesTab(){
   });
 
   document.getElementById('sellBtn').addEventListener('click', onSell);
+  wireScanInput();
   updateSaleSummary(available,nc,rc);
   renderSalesHistory(el);
+}
+
+// The scan box keeps focus so a scanner never needs a click first —
+// but it must not steal focus while someone is typing a customer name,
+// so the grab is suspended whenever another field is focused.
+function wireScanInput(){
+  const box=document.getElementById('scanInput');
+  if(!box) return;
+  box.addEventListener('keydown',ev=>{
+    if(ev.key==='Enter'||ev.key==='Tab'){
+      ev.preventDefault();
+      const v=box.value; box.value='';
+      if(v.trim()) handleScan(v);
+    }
+  });
+  const isTypingElsewhere=()=>{
+    const a=document.activeElement;
+    return a && a!==box && (a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA');
+  };
+  if(!isTypingElsewhere()) { try{ box.focus(); }catch(e){} }
+  clearInterval(window._scanFocusTimer);
+  window._scanFocusTimer=setInterval(()=>{
+    const panel=document.getElementById('panel-sales');
+    if(!panel||!panel.classList.contains('active')) return;
+    const b=document.getElementById('scanInput');
+    if(b && !isTypingElsewhere() && document.activeElement!==b){ try{ b.focus(); }catch(e){} }
+  },1200);
 }
 
 function updateSaleSummary(available,nc,rc){
@@ -1017,6 +1246,12 @@ async function onSell(){
   if(!selRolls.size){ setStatus('Tick at least one roll first.','err'); return; }
   if(!customer){ setStatus('Enter customer name.','err'); return; }
 
+  // The dispatch desk may never print a label, so its tag is claimed on
+  // first use of either kind rather than on first print.
+  if(!(biz.deviceTag||'').trim()){
+    const tagged=await ensureDeviceTag();
+    if(!tagged) return;
+  }
   const rollNos=[...selRolls];
   const rows=state.prod.rows.filter(r=>rollNos.includes(r[rc.key]));
   const totalNet=rows.reduce((s,r)=>s+(parseFloat(nc?r[nc.key]:0)||0),0);
@@ -1026,18 +1261,20 @@ async function onSell(){
 
   let resp;
   try{
-    resp=await api('sell',{ customer, dispatchDate, destination, rollNos, totalNet:totalNet.toFixed(2), timestamp:formatTS() });
+    resp=await api('sell',{ customer, dispatchDate, destination, rollNos,
+        totalNet:totalNet.toFixed(2), timestamp:formatTS(), deviceTag:biz.deviceTag||'' });
   }catch(e){
-    if(btn){ btn.disabled=false; btn.textContent='Sell Selected Rolls'; }
+    if(btn){ btn.disabled=false; btn.textContent='Sell selected rolls'; }
     setStatus('No connection — sale not recorded.','err'); return;
   }
-  if(btn){ btn.disabled=false; btn.textContent='Sell Selected Rolls'; }
+  if(btn){ btn.disabled=false; btn.textContent='Sell selected rolls'; }
 
   if(!resp.ok){ setStatus(resp.error||'Sale rejected.','err'); await syncNow(true); return; }
 
   selRolls=new Set(); saveSel();
   opDraft._saleCust=''; opDraft._saleDate=''; opDraft._saleDest=''; saveDraft();
-  setStatus('Sale recorded ✓','ok');
+  scanLog=[]; scanFlash=null;
+  setStatus('Dispatched ✓ '+rollNos.length+' roll(s) · '+totalNet.toFixed(2)+' kg','ok');
   await syncNow(true);
 }
 
@@ -1049,11 +1286,12 @@ function renderSalesHistory(container){
   wrap.appendChild(t);
   const tw=document.createElement('div'); tw.className='tbl-wrap';
   tw.innerHTML=`<table><thead><tr>
-    <th>Customer</th><th>Dispatch</th><th>Destination</th><th>Rolls</th><th>Total Net</th><th>Sold On</th>
+    <th>Customer</th><th>Dispatch</th><th>Destination</th><th>Rolls</th><th>Total Net</th><th>Sold On</th><th>Desk</th>
   </tr></thead><tbody>${state.sales.map(tx=>`<tr>
     <td>${esc(tx.customer)}</td><td>${esc(tx.dispatchDate)}</td><td>${esc(tx.destination)}</td>
     <td style="font-size:0.8rem">${esc(tx.rollNos.join(', '))}</td>
     <td>${esc(tx.totalNet)} kg</td><td style="font-size:0.8rem">${esc(tx.timestamp)}</td>
+    <td>${esc(tx.deviceTag||'—')}</td>
   </tr>`).join('')}</tbody></table>`;
   wrap.appendChild(tw);
   (document.getElementById('historySlot')||container).appendChild(wrap);
@@ -1092,12 +1330,22 @@ function exportInventory(){
       'Gross Wt':gc?r[gc.key]:'','Core Wt':cc?r[cc.key]:'','Net Wt':nc?r[nc.key]:'',
       'Timestamp':tc?r[tc.key]:'','Status':tx?'Sold':'Available',
       'Customer':tx?tx.customer:'','Dispatch Date':tx?tx.dispatchDate:'',
-      'Destination':tx?tx.destination:''
+      'Destination':tx?tx.destination:'',
+      'Dispatch Desk':tx?(tx.deviceTag||''):'',
+      'Label Reprints':countReprints(rn)
     };
   });
   if(!rows.length){ setStatus('Nothing to export yet.','err'); return; }
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Inventory');
+  // Second sheet: every label reprint. A roll printed once and dispatched
+  // is normal; one printed three times is a question worth asking.
+  const reps=(state.reprints||[]).map(x=>({
+    'Roll No.':x.rollNo,'Reprinted On Device':x.deviceTag,'Timestamp':x.timestamp
+  }));
+  XLSX.utils.book_append_sheet(wb,
+    XLSX.utils.json_to_sheet(reps.length?reps:[{'Roll No.':'(no reprints logged)','Reprinted On Device':'','Timestamp':''}]),
+    'Reprints');
   XLSX.writeFile(wb,'BPP_Inventory_'+new Date().toISOString().slice(0,10)+'.xlsx');
   setStatus('Inventory exported ✓','ok');
 }
